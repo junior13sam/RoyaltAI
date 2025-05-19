@@ -347,4 +347,74 @@
   )
 )
 
+;; AI-NFT Royalty Analytics and Optimization
+(define-public (optimize-royalty-distribution
+    (token-id uint)
+    (new-contributors (list 5 principal))
+    (new-shares (list 5 uint))
+    (performance-data (list 10 {
+      period: uint,
+      sales-volume: uint,
+      contributor-performance: (list 5 uint)
+    })))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-not-authorized)
+    (asserts! (not (var-get paused)) err-contract-paused)
+    
+    (let
+      (
+        (metadata (unwrap! (map-get? nft-metadata { token-id: token-id }) err-invalid-token))
+        (creator (get creator metadata))
+        (current-contributors (get contributors metadata))
+        (current-shares (get contributor-shares metadata))
+        (total-new-shares (fold + new-shares u0))
+        (performance-score (calculate-performance-score performance-data))
+        (optimized-shares (optimize-shares new-shares performance-score))
+      )
+      
+      ;; Validate new contributors and shares
+      (asserts! (is-eq (len new-contributors) (len new-shares)) err-invalid-contributors)
+      (asserts! (> total-new-shares u0) err-invalid-shares)
+      
+      ;; Calculate transition period
+      (let
+        (
+          (transition-blocks u100) ;; Number of blocks for transition
+          (current-block block-height)
+          (transition-end-block (+ current-block transition-blocks))
+        )
+        
+        ;; Store transition data
+        (map-set nft-metadata
+          { token-id: token-id }
+          (merge metadata {
+            contributors: new-contributors,
+            contributor-shares: optimized-shares
+          })
+        )
+        
+        ;; Emit event for transition
+        (print {
+          event: "royalty-optimization",
+          token-id: token-id,
+          creator: creator,
+          previous-contributors: current-contributors,
+          previous-shares: current-shares,
+          new-contributors: new-contributors,
+          new-shares: optimized-shares,
+          transition-start: current-block,
+          transition-end: transition-end-block,
+          performance-score: performance-score
+        })
+        
+        (ok {
+          token-id: token-id,
+          optimized-shares: optimized-shares,
+          performance-score: performance-score,
+          transition-end: transition-end-block
+        })
+      )
+    )
+  )
+)
 
