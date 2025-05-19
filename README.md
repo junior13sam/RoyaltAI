@@ -1,4 +1,4 @@
-# AI-NFT Royalty Distribution Smart Contract
+# RoyaltAI: AI-NFT Royalty Distribution Smart Contract
 
 A robust Clarity smart contract for managing AI-generated NFTs with automated, transparent royalty distribution and performance-based share optimization.
 
